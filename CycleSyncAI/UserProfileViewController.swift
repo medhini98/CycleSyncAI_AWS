@@ -34,6 +34,9 @@ class UserProfileViewController: UIViewController, UIPickerViewDelegate, UIPicke
     let resetButton = UIButton(type: .system)
     let backButton = UIButton(type: .system)
     
+    let selectedColor = UIColor(red: 150/255, green: 140/255, blue: 235/255, alpha: 1)  // deeper lavender #968CEB
+    let unselectedColor = UIColor(red: 193/255, green: 194/255, blue: 249/255, alpha: 1)  // #C1C2F9
+    
     let ageBuckets = ["Below 18", "18–30", "31–40", "41–50", "51+"]
     let medicalOptions = ["Diabetes", "PCOS", "Thyroid", "Hypertension", "Cardiovascular"]
     let dietaryOptions = ["Vegetarian", "Vegan", "Pescatarian", "Gluten-free", "Dairy-free", "Nut-free", "Keto", "Paleo"]
@@ -45,6 +48,7 @@ class UserProfileViewController: UIViewController, UIPickerViewDelegate, UIPicke
     var medicalButtons: [UIButton] = []
     var dietaryButtons: [UIButton] = []
     var goalButtons: [UIButton] = []
+    var selectedGoals: [String] = []
     var activityButtons: [UIButton] = []
 
     
@@ -60,10 +64,49 @@ class UserProfileViewController: UIViewController, UIPickerViewDelegate, UIPicke
         setupActivitySection()
         setupActionButtons()
         loadProfile()
+        
         NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillShow),
                                                name: UIResponder.keyboardWillShowNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillHide),
                                                name: UIResponder.keyboardWillHideNotification, object: nil)
+        
+        let textFields = [heightCmField, heightFtField, heightInField, weightField, medicalOtherField, dietaryOtherField]
+            for field in textFields {
+                field.layer.cornerRadius = 10
+                field.layer.masksToBounds = true
+                field.layer.borderWidth = 1
+                field.layer.borderColor = UIColor(white: 0.85, alpha: 1).cgColor  // light gray border
+            }
+        
+        let defaults = UserDefaults.standard
+            if let savedGoals = defaults.array(forKey: "selectedGoals") as? [String] {
+                selectedGoals = savedGoals
+
+                // Update button visuals
+                for button in goalButtons {
+                    if let title = button.title(for: .normal) {
+                        if selectedGoals.contains(title) {
+                            button.backgroundColor = UIColor(red: 0.5, green: 0.4, blue: 0.9, alpha: 1)
+                        } else {
+                            button.backgroundColor = UIColor(red: 193/255, green: 194/255, blue: 249/255, alpha: 1) // unselected color
+                        }
+                    }
+                }
+            }
+
+            // Apply rounded corners to segmented controls
+            let segments = [heightUnitSegment, weightUnitSegment]
+            for segment in segments {
+                segment.layer.cornerRadius = 10
+                segment.layer.masksToBounds = true
+            }
+    }
+    
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        styleActionButton(saveButton, type: "save")
+        styleActionButton(resetButton, type: "reset")
+        styleActionButton(backButton, type: "back")
     }
     
     func setupTapToDismiss() {
@@ -121,18 +164,47 @@ class UserProfileViewController: UIViewController, UIPickerViewDelegate, UIPicke
 
     func styleLabel(_ label: UILabel, size: CGFloat, heavy: Bool = false) {
         label.font = UIFont(name: heavy ? "Avenir-Heavy" : "Avenir", size: size)
-        label.textColor = UIColor(red: 102/255, green: 51/255, blue: 153/255, alpha: 1)
+        label.textColor = UIColor(red: 155/255, green: 107/255, blue: 175/255, alpha: 1)
     }
     
-    func styleActionButton(_ button: UIButton) {
+    func styleActionButton(_ button: UIButton, type: String) {
         button.setTitleColor(.white, for: .normal)
         button.titleLabel?.font = UIFont(name: "Avenir-Heavy", size: 16)
-        button.backgroundColor = UIColor(red: 0.3, green: 0.6, blue: 0.9, alpha: 1)
         button.layer.cornerRadius = 12
         button.layer.shadowColor = UIColor.black.cgColor
         button.layer.shadowOpacity = 0.2
         button.layer.shadowOffset = CGSize(width: 0, height: 2)
         button.layer.shadowRadius = 4
+
+        // Check if gradient layer already exists; if not, add it
+        let gradientLayer: CAGradientLayer
+        if let existingGradient = button.layer.sublayers?.first(where: { $0 is CAGradientLayer }) as? CAGradientLayer {
+            gradientLayer = existingGradient
+        } else {
+            gradientLayer = CAGradientLayer()
+            gradientLayer.cornerRadius = 12
+            button.layer.insertSublayer(gradientLayer, at: 0)
+        }
+
+        // Apply colors based on type
+        if type == "save" {
+            gradientLayer.colors = [
+                UIColor(red: 1.0, green: 0.765, blue: 0.725, alpha: 1).cgColor,    // #FFC3B9
+                UIColor(red: 0.996, green: 0.698, blue: 0.863, alpha: 1).cgColor   // #FEB2DC
+            ]
+        } else if type == "reset" || type == "back" {
+            gradientLayer.colors = [
+                UIColor(red: 0.8, green: 0.757, blue: 0.969, alpha: 1).cgColor,    // #CCC1F7
+                UIColor(red: 0.663, green: 0.776, blue: 1.0, alpha: 1).cgColor     // #A9C6FF
+            ]
+        } else {
+            gradientLayer.colors = [
+                UIColor(red: 193/255, green: 194/255, blue: 249/255, alpha: 1).cgColor
+            ]
+        }
+
+        // Always update the gradient frame to match the button bounds
+        gradientLayer.frame = button.bounds
     }
     
     @objc func toggleHeightFields() {
@@ -148,20 +220,21 @@ class UserProfileViewController: UIViewController, UIPickerViewDelegate, UIPicke
     }
     
     @objc func toggleButtonSelection(_ sender: UIButton) {
-        // If sender is one of the medical buttons → deselect medicalNoneButton
         if medicalButtons.contains(sender) {
-            medicalNoneButton.backgroundColor = UIColor(red: 0.7, green: 0.6, blue: 1.0, alpha: 1)
+            medicalNoneButton.isSelected = false
+            medicalNoneButton.backgroundColor = unselectedColor
         }
-        // If sender is one of the dietary buttons → deselect dietaryNoneButton
         if dietaryButtons.contains(sender) {
-            dietaryNoneButton.backgroundColor = UIColor(red: 0.7, green: 0.6, blue: 1.0, alpha: 1)
+            dietaryNoneButton.isSelected = false
+            dietaryNoneButton.backgroundColor = unselectedColor
         }
 
-        // Toggle selection state of tapped button
-        if sender.backgroundColor == UIColor(red: 0.7, green: 0.6, blue: 1.0, alpha: 1) {
-            sender.backgroundColor = UIColor(red: 0.5, green: 0.4, blue: 0.9, alpha: 1)
+        if sender.isSelected {
+            sender.isSelected = false
+            sender.backgroundColor = unselectedColor
         } else {
-            sender.backgroundColor = UIColor(red: 0.7, green: 0.6, blue: 1.0, alpha: 1)
+            sender.isSelected = true
+            sender.backgroundColor = selectedColor
         }
     }
     
@@ -176,34 +249,75 @@ class UserProfileViewController: UIViewController, UIPickerViewDelegate, UIPicke
     
     @objc func clearMedicalSelections() {
         for button in medicalButtons {
-            button.backgroundColor = UIColor(red: 0.7, green: 0.6, blue: 1.0, alpha: 1)
+            button.isSelected = false
+            button.backgroundColor = unselectedColor
         }
-        medicalNoneButton.backgroundColor = UIColor(red: 0.5, green: 0.4, blue: 0.9, alpha: 1)
+        medicalNoneButton.isSelected = true
+        medicalNoneButton.backgroundColor = selectedColor
         medicalOtherField.text = ""
         medicalOtherField.isHidden = true
     }
 
     @objc func clearDietarySelections() {
         for button in dietaryButtons {
-            button.backgroundColor = UIColor(red: 0.7, green: 0.6, blue: 1.0, alpha: 1)
+            button.isSelected = false
+            button.backgroundColor = unselectedColor
         }
-        dietaryNoneButton.backgroundColor = UIColor(red: 0.5, green: 0.4, blue: 0.9, alpha: 1)
+        dietaryNoneButton.isSelected = true
+        dietaryNoneButton.backgroundColor = selectedColor
         dietaryOtherField.text = ""
         dietaryOtherField.isHidden = true
     }
     
-    @objc func toggleGoalSelection(_ sender: UIButton) {
-        for button in goalButtons {
-            button.backgroundColor = UIColor(red: 0.7, green: 0.6, blue: 1.0, alpha: 1)
+    @objc func handleGoalButtonTapped(_ sender: UIButton) {
+        guard let title = sender.title(for: .normal) else { return }
+
+        let exclusiveGoals = ["Weight loss", "Weight gain", "Maintenance"]
+
+        if exclusiveGoals.contains(title) {
+            // Deselect all exclusive goals
+            for button in goalButtons where exclusiveGoals.contains(button.title(for: .normal) ?? "") {
+                button.isSelected = false
+                button.backgroundColor = unselectedColor
+            }
+            selectedGoals.removeAll(where: { exclusiveGoals.contains($0) })
+
+            // Toggle tapped exclusive goal
+            if sender.isSelected {
+                sender.isSelected = false
+                selectedGoals.removeAll(where: { $0 == title })
+                sender.backgroundColor = unselectedColor
+            } else {
+                sender.isSelected = true
+                selectedGoals.append(title)
+                sender.backgroundColor = selectedColor
+            }
+        } else {
+            // Non-exclusive: toggle on/off
+            if sender.isSelected {
+                sender.isSelected = false
+                selectedGoals.removeAll(where: { $0 == title })
+                sender.backgroundColor = unselectedColor
+            } else {
+                sender.isSelected = true
+                selectedGoals.append(title)
+                sender.backgroundColor = selectedColor
+            }
         }
-        sender.backgroundColor = UIColor(red: 0.5, green: 0.4, blue: 0.9, alpha: 1)
+
+        let defaults = UserDefaults.standard
+        defaults.set(selectedGoals, forKey: "selectedGoals")
+
+        print("Current selected goals: \(selectedGoals)")
     }
     
     @objc func toggleActivitySelection(_ sender: UIButton) {
         for button in activityButtons {
-            button.backgroundColor = UIColor(red: 0.7, green: 0.6, blue: 1.0, alpha: 1)
+            button.isSelected = false
+            button.backgroundColor = unselectedColor
         }
-        sender.backgroundColor = UIColor(red: 0.5, green: 0.4, blue: 0.9, alpha: 1)
+        sender.isSelected = true
+        sender.backgroundColor = selectedColor
     }
     
     @objc func handleSave() {
@@ -212,24 +326,24 @@ class UserProfileViewController: UIViewController, UIPickerViewDelegate, UIPicke
         let height = heightUnitSegment.selectedSegmentIndex == 0 ? heightCmField.text ?? "" : "\(heightFtField.text ?? "") ft \(heightInField.text ?? "") in"
         let weight = weightField.text ?? ""
         
-        var selectedMedical = medicalButtons.filter { $0.backgroundColor == UIColor(red: 0.5, green: 0.4, blue: 0.9, alpha: 1) }.map { $0.title(for: .normal) ?? "" }
+        var selectedMedical = medicalButtons.filter { $0.isSelected }.map { $0.title(for: .normal) ?? "" }
         if !medicalOtherField.isHidden, !medicalOtherField.text!.isEmpty {
             selectedMedical.append(medicalOtherField.text!)
         }
-        if medicalNoneButton.backgroundColor == UIColor(red: 0.5, green: 0.4, blue: 0.9, alpha: 1) {
+        if medicalNoneButton.isSelected {
             selectedMedical = ["None"]
         }
 
-        var selectedDietary = dietaryButtons.filter { $0.backgroundColor == UIColor(red: 0.5, green: 0.4, blue: 0.9, alpha: 1) }.map { $0.title(for: .normal) ?? "" }
+        var selectedDietary = dietaryButtons.filter { $0.isSelected }.map { $0.title(for: .normal) ?? "" }
         if !dietaryOtherField.isHidden, !dietaryOtherField.text!.isEmpty {
             selectedDietary.append(dietaryOtherField.text!)
         }
-        if dietaryNoneButton.backgroundColor == UIColor(red: 0.5, green: 0.4, blue: 0.9, alpha: 1) {
+        if dietaryNoneButton.isSelected {
             selectedDietary = ["None"]
         }
 
-        let selectedGoal = goalButtons.first(where: { $0.backgroundColor == UIColor(red: 0.5, green: 0.4, blue: 0.9, alpha: 1) })?.title(for: .normal) ?? "None"
-        let selectedActivity = activityButtons.first(where: { $0.backgroundColor == UIColor(red: 0.5, green: 0.4, blue: 0.9, alpha: 1) })?.title(for: .normal) ?? "None"
+        let selectedGoal = goalButtons.filter { $0.isSelected }.map { $0.title(for: .normal) ?? "" }
+        let selectedActivity = activityButtons.first(where: { $0.isSelected })?.title(for: .normal) ?? "None"
         
         print("SAVED:")
         print("Name: \(name)")
@@ -253,7 +367,7 @@ class UserProfileViewController: UIViewController, UIPickerViewDelegate, UIPicke
         userDefaults.set(selectedDietary, forKey: "dietary")
         userDefaults.set(medicalOtherField.text ?? "", forKey: "medicalOther")
         userDefaults.set(dietaryOtherField.text ?? "", forKey: "dietaryOther")
-        userDefaults.set(selectedGoal, forKey: "goal")
+        userDefaults.set(selectedGoal, forKey: "selectedGoals")
         userDefaults.set(selectedActivity, forKey: "activity")
     }
     
@@ -266,15 +380,29 @@ class UserProfileViewController: UIViewController, UIPickerViewDelegate, UIPicke
         agePicker.selectRow(0, inComponent: 0, animated: true)
         clearMedicalSelections()
         clearDietarySelections()
+        
+        for button in medicalButtons {
+            button.isSelected = false
+            button.backgroundColor = unselectedColor
+        }
+        medicalNoneButton.isSelected = false
+        medicalNoneButton.backgroundColor = unselectedColor
+        
+        for button in dietaryButtons {
+            button.isSelected = false
+            button.backgroundColor = unselectedColor
+        }
+        dietaryNoneButton.isSelected = false
+        dietaryNoneButton.backgroundColor = unselectedColor
 
-        // Reset goal buttons
         for button in goalButtons {
-            button.backgroundColor = UIColor(red: 0.7, green: 0.6, blue: 1.0, alpha: 1)
+            button.isSelected = false
+            button.backgroundColor = unselectedColor
         }
 
-        // Reset activity buttons
         for button in activityButtons {
-            button.backgroundColor = UIColor(red: 0.7, green: 0.6, blue: 1.0, alpha: 1)
+            button.isSelected = false
+            button.backgroundColor = unselectedColor
         }
         
         userDefaults.removeObject(forKey: "name")
@@ -285,12 +413,12 @@ class UserProfileViewController: UIViewController, UIPickerViewDelegate, UIPicke
         userDefaults.removeObject(forKey: "dietary")
         userDefaults.removeObject(forKey: "medicalOther")
         userDefaults.removeObject(forKey: "dietaryOther")
-        userDefaults.removeObject(forKey: "goal")
+        userDefaults.removeObject(forKey: "selectedGoals")
         userDefaults.removeObject(forKey: "activity")
         
         heightUnitSegment.selectedSegmentIndex = 0
         weightUnitSegment.selectedSegmentIndex = 0
-        toggleHeightFields()  // make sure fields display correctly after reset
+        toggleHeightFields()
     }
     
     
@@ -509,7 +637,7 @@ class UserProfileViewController: UIViewController, UIPickerViewDelegate, UIPicke
         var previousMedicalButton: UIButton? = medicalNoneButton  // update to start below 'None'
 
         for option in medicalOptions {
-            let button = UIButton(type: .system)
+            let button = UIButton(type: .custom)
             button.setTitle(option, for: .normal)
             styleSelectableButton(button)
             button.addTarget(self, action: #selector(toggleButtonSelection(_:)), for: .touchUpInside)
@@ -580,7 +708,7 @@ class UserProfileViewController: UIViewController, UIPickerViewDelegate, UIPicke
         var previousDietaryButton: UIButton? = dietaryNoneButton
 
         for option in dietaryOptions {
-            let button = UIButton(type: .system)
+            let button = UIButton(type: .custom)
             button.setTitle(option, for: .normal)
             styleSelectableButton(button)
             button.addTarget(self, action: #selector(toggleButtonSelection(_:)), for: .touchUpInside)
@@ -640,10 +768,10 @@ class UserProfileViewController: UIViewController, UIPickerViewDelegate, UIPicke
         var previousGoalButton: UIButton? = nil
 
         for option in goalOptions {
-            let button = UIButton(type: .system)
+            let button = UIButton(type: .custom)
             button.setTitle(option, for: .normal)
             styleSelectableButton(button)
-            button.addTarget(self, action: #selector(toggleGoalSelection(_:)), for: .touchUpInside)
+            button.addTarget(self, action: #selector(handleGoalButtonTapped(_:)), for: .touchUpInside)
             contentView.addSubview(button)
 
             button.translatesAutoresizingMaskIntoConstraints = false
@@ -674,7 +802,7 @@ class UserProfileViewController: UIViewController, UIPickerViewDelegate, UIPicke
         var previousActivityButton: UIButton? = nil
 
         for option in activityOptions {
-            let button = UIButton(type: .system)
+            let button = UIButton(type: .custom)
             button.setTitle(option, for: .normal)
             styleSelectableButton(button)
             button.addTarget(self, action: #selector(toggleActivitySelection(_:)), for: .touchUpInside)
@@ -696,25 +824,25 @@ class UserProfileViewController: UIViewController, UIPickerViewDelegate, UIPicke
     
     func setupActionButtons() {
         saveButton.setTitle("Save", for: .normal)
-        styleActionButton(saveButton)
         saveButton.addTarget(self, action: #selector(handleSave), for: .touchUpInside)
         contentView.addSubview(saveButton)
+        styleActionButton(saveButton, type: "save")
 
         saveButton.translatesAutoresizingMaskIntoConstraints = false
 
         // Reset Button
         resetButton.setTitle("Reset", for: .normal)
-        styleActionButton(resetButton)
         resetButton.addTarget(self, action: #selector(handleReset), for: .touchUpInside)
         contentView.addSubview(resetButton)
+        styleActionButton(resetButton, type: "reset")
 
         resetButton.translatesAutoresizingMaskIntoConstraints = false
 
         // Back Button
         backButton.setTitle("Back", for: .normal)
-        styleActionButton(backButton)
         backButton.addTarget(self, action: #selector(handleBack), for: .touchUpInside)
         contentView.addSubview(backButton)
+        styleActionButton(backButton, type: "back")
 
         backButton.translatesAutoresizingMaskIntoConstraints = false
 
@@ -741,15 +869,22 @@ class UserProfileViewController: UIViewController, UIPickerViewDelegate, UIPicke
     
     func styleSelectableButton(_ button: UIButton) {
         button.setTitleColor(.white, for: .normal)
+        button.setTitleColor(.white, for: .selected)
         button.titleLabel?.font = UIFont(name: "Avenir", size: 16)
-        button.backgroundColor = UIColor(red: 0.7, green: 0.6, blue: 1.0, alpha: 1)
+        button.backgroundColor = unselectedColor
         button.layer.cornerRadius = 12
         button.layer.shadowColor = UIColor.black.cgColor
         button.layer.shadowOpacity = 0.2
         button.layer.shadowOffset = CGSize(width: 0, height: 2)
         button.layer.shadowRadius = 4
-    }
 
+        // ✅ Ensure button uses full background (remove system tint)
+        button.tintColor = .clear
+
+        // ✅ Add a subtle border so background is visibly consistent
+        button.layer.borderWidth = 1
+        button.layer.borderColor = UIColor.clear.cgColor
+    }
 
     func numberOfComponents(in pickerView: UIPickerView) -> Int { 1 }
     func pickerView(_ pickerView: UIPickerView, numberOfRowsInComponent component: Int) -> Int { ageBuckets.count }
@@ -769,37 +904,44 @@ class UserProfileViewController: UIViewController, UIPickerViewDelegate, UIPicke
         if let savedMedical = userDefaults.array(forKey: "medical") as? [String] {
             for button in medicalButtons {
                 if savedMedical.contains(button.title(for: .normal) ?? "") {
-                    button.backgroundColor = UIColor(red: 0.5, green: 0.4, blue: 0.9, alpha: 1)
+                    button.isSelected = true
+                    button.backgroundColor = selectedColor
                 }
             }
             if savedMedical.contains("None") {
-                medicalNoneButton.backgroundColor = UIColor(red: 0.5, green: 0.4, blue: 0.9, alpha: 1)
+                medicalNoneButton.isSelected = true
+                medicalNoneButton.backgroundColor = selectedColor
             }
         }
 
         if let savedDietary = userDefaults.array(forKey: "dietary") as? [String] {
             for button in dietaryButtons {
                 if savedDietary.contains(button.title(for: .normal) ?? "") {
-                    button.backgroundColor = UIColor(red: 0.5, green: 0.4, blue: 0.9, alpha: 1)
+                    button.isSelected = true
+                    button.backgroundColor = selectedColor
                 }
             }
             if savedDietary.contains("None") {
-                dietaryNoneButton.backgroundColor = UIColor(red: 0.5, green: 0.4, blue: 0.9, alpha: 1)
+                dietaryNoneButton.isSelected = true
+                dietaryNoneButton.backgroundColor = selectedColor
             }
         }
 
-        if let savedGoal = userDefaults.string(forKey: "goal") {
+        if let savedGoals = userDefaults.array(forKey: "selectedGoals") as? [String] {
             for button in goalButtons {
-                if button.title(for: .normal) == savedGoal {
-                    button.backgroundColor = UIColor(red: 0.5, green: 0.4, blue: 0.9, alpha: 1)
+                if savedGoals.contains(button.title(for: .normal) ?? "") {
+                    button.isSelected = true
+                    button.backgroundColor = selectedColor
                 }
             }
         }
+        
 
         if let savedActivity = userDefaults.string(forKey: "activity") {
             for button in activityButtons {
                 if button.title(for: .normal) == savedActivity {
-                    button.backgroundColor = UIColor(red: 0.5, green: 0.4, blue: 0.9, alpha: 1)
+                    button.isSelected = true
+                    button.backgroundColor = selectedColor
                 }
             }
         }

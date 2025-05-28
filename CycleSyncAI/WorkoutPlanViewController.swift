@@ -152,7 +152,7 @@ class WorkoutPlanViewController: UIViewController {
         guard let profile = self.userProfileData else { return }
 
         let workoutPrompt = """
-        You are an expert nutritionist and women's fitness trainer. Please generate a complete, formatted HTML document.
+        You are an expert nutritionist and women's fitness trainer. Generate a complete, formatted HTML document. Answers should be direct and to the point.
 
         - Use <h2> for section headings.
         - Use <b> for important terms.
@@ -163,48 +163,46 @@ class WorkoutPlanViewController: UIViewController {
 
         1. A brief bullet list (5–6 points) summarizing the key exercise/movement focuses and priorities relevant to the user’s menstrual phase \(phase), goal \(profile.goal), activity level \(profile.activityLevel), age group \(profile.ageGroup), medical conditions \(profile.medicalConditions), and dietary restrictions \(profile.dietaryRestrictions).
 
-        2. Generate a personalized workout plan for a \(profile.ageGroup) woman, \(profile.height), \(profile.weight), with \(profile.medicalConditions) and \(profile.dietaryRestrictions), on day \(cycleDay) of her menstrual cycle (\(phase) phase). The user's goal is \(profile.goal) and current activity level is \(profile.activityLevel). Include workout timings as well. Title this section as ‘Personalized Workout Plan’ (no need to include age, height, weight, or phase details in the subheading).
+        2. Generate a personalized workout plan for a \(profile.ageGroup) woman, \(profile.height), \(profile.weight), with \(profile.medicalConditions) and \(profile.dietaryRestrictions), on day \(cycleDay) of her menstrual cycle (\(phase) phase). The user's goal is \(profile.goal) and current activity level is \(profile.activityLevel). Include workout timings. Title this section as ‘Personalized Workout Plan’ (no need to include age, height, weight, or phase details in the subheading).
 
         Inside the Personalized Workout Plan section:
-        - Include a **Workout Intensity** subheading and clearly state the intensity level (Low, Medium, or High), explicitly noting it is based on the menstrual phase \(phase) drawn from the menstrual phase guidelines.
-        - Include the **main workout category** drawn from the menstrual phase guidelines.
-        - Provide **detailed exercise names or specific instructions** under each main workout category, so the user can follow a clear, actionable routine.
+        - Include a Workout Intensity subheading and state the intensity level (Low, Medium, or High), based on the menstrual phase \(phase).
+        - Include the main workout category for the phase.
+        - Provide detailed exercise names or specific instructions under each category so the user can follow a clear, actionable routine.
         - For each exercise, include a brief (1-line) explanation of what the exercise is or how to do it, written simply for someone new to fitness.
-        - When mentioning weights (e.g., dumbbells, resistance), suggest the weight in **kg** and include the equivalent in **lbs** in brackets, tailoring the recommendation to the user’s menstrual phase \(phase), goal \(profile.goal), activity level \(profile.activityLevel), age group \(profile.ageGroup), and medical conditions \(profile.medicalConditions).
-        - Include a visual indicator such as a dumbbell icon 🏋️ next to weight recommendations to make them stand out clearly.
-        - If suggesting household substitutes (like water bottles instead of dumbbells), **explicitly label this** in the workout details (e.g., “No dumbbells? Use two filled water bottles (1–2 kg each)”).
-        - Place **hydration instructions alongside the workout steps**, not at the end, and visually highlight them using a water drop icon 💧 or hydration checklist.
+        - When mentioning weights (e.g., dumbbells, resistance), suggest the weight in kg and include the equivalent in lbs, tailoring recommendations to the phase \(phase), goal \(profile.goal), activity level \(profile.activityLevel), age group \(profile.ageGroup), and medical conditions \(profile.medicalConditions).
+        - Add a dumbbell icon 🏋️ next to weight recommendations.
+        - If suggesting household substitutes (like water bottles), label this in the workout details.
+        - Add hydration instructions alongside the workout steps, highlighted using a water drop icon 💧 or hydration checklist.
 
         While generating the workout plan, use the following menstrual phase exercise intensity guidelines:
-        - **Menstrual (days 1–7):** Low or no intensity → suggest light walks, gentle yoga, or light strength/cardio.
-        - **Follicular (days 8–14):** Medium to high intensity → suggest brisk walks, weight training, high-intensity exercises, or swimming.
-        - **Ovulation (days 15–20):** High intensity → suggest HIIT, cardio, spin classes, circuits, or swimming.
-        - **Mid Luteal (days 21–24):** Low to medium intensity → suggest swimming, gentle strength training, or Pilates.
-        - **Late Luteal (days 25–35):** Low intensity → suggest restorative yoga, long walks, or stretching.
+        - Menstrual (days 1–7): Low or no intensity → suggest light walks, gentle yoga, or light strength/cardio.
+        - Follicular (days 8–14): Medium to high intensity → suggest brisk walks, weight training, high-intensity exercises, or swimming.
+        - Ovulation (days 15–20): High intensity → suggest HIIT, cardio, spin classes, circuits, or swimming.
+        - Mid Luteal (days 21–24): Low to medium intensity → suggest swimming, gentle strength training, or Pilates.
+        - Late Luteal (days 25–35): Low intensity → suggest restorative yoga, long walks, or stretching.
 
-        Do **not** include warnings or notes about avoiding foods or allergens (such as soy, pine nuts, aloe vera) in the workout recommendations section; focus only on movement, exercise, hydration, and physical suggestions.
+        Explanations and suggestions throughout should be phase-based, as this is the core focus of the app.
 
-        3. Provide a brief (2–3 sentence) explanation of why the recommended workout is helpful during the \(phase) phase. This should include:
-        - Which muscles the workout primarily targets and why this is beneficial for the user’s menstrual phase \(phase), goal \(profile.goal), and medical conditions \(profile.medicalConditions).
-        - A brief sentence explaining why the warm-up and cool-down are important (e.g., helps prevent injury, improves flexibility, aids recovery).
+        3. Provide a brief (2–3 sentence) explanation of why the recommended workout is helpful during the \(phase) phase, including which muscles it targets and why the warm-up and cool-down are important, taking into account the user’s age, goal, and medical conditions.
 
         4. Add a one-line suggestion for ideal wake-up and bedtime routines for this user, based on their age, activity, and goal.
 
-        5. Provide additional quick movement tips (not mentioned in the main workout plan) to help achieve \(profile.goal) during the \(phase) phase, considering the user’s medical conditions \(profile.medicalConditions) and dietary restrictions \(profile.dietaryRestrictions). For example, tips like: “Take breaks from long periods of sitting to stand and stretch,” “Incorporate light stretching or deep breathing during work breaks,” or “Use a standing desk for part of the day if possible.”
+        5. Provide additional quick movement tips (not mentioned in the main workout plan) to help achieve \(profile.goal) during the \(phase) phase, considering the user’s medical conditions \(profile.medicalConditions) and dietary restrictions \(profile.dietaryRestrictions).
 
-        6. Provide an approximate estimate of total calories burned for the full workout, tailored to the user’s weight \(profile.weight), intensity level, and activity type.
+        6. Provide an approximate estimate of total calories burned for the workout, tailored to the user’s weight \(profile.weight), intensity, and activity type.
 
         7. Add a kind, appreciative line recognizing the user’s commitment to their health. Optionally include a motivational line if it aligns well with the user’s goal (\(profile.goal)).
 
-        8. At the end, include a <h2>Sources</h2> section that lists all the real, verifiable citations used in the plan. Format each citation on a separate line, numbered like:
+        8. Include a <h2>Sources</h2> section listing all real, verifiable citations used in the plan. Format each citation on a separate line, numbered like:
         [1] https://...
         [2] https://...
         [3] https://...
         [4] https://...
-        etc.
-        These sources should be real, verifiable, and drawn from reputable resources (such as scientific publications, reputable health sites, or official guidelines). If no reliable citation is available, omit rather than fabricate one.
 
-        Please separate responses for each section clearly using headings (but do not label them as ‘Task 1’, ‘Task 2’, etc.).
+        These sources should come from reputable resources (scientific publications, health sites, or official guidelines). Omit if no reliable citation is available.
+
+        Separate each section clearly using headings (do not label them as ‘Task 1’, ‘Task 2’, etc.).
 
         While generating the workout plan, ensure you:
         - Suggest workout plans/exercises that support \(phase), \(profile.medicalConditions), and \(profile.goal).
@@ -295,8 +293,21 @@ class WorkoutPlanViewController: UIViewController {
                    let content = message["content"] as? String {
 
                     print("✅ Got API content!")
+                    
+                    // ✅ Add this to print raw content length and raw text
+                        print("✅ Raw API content length: \(content.count)")
+                        print("✅ Raw API content:\n\(content)")
 
-                    if let htmlData = content.data(using: .utf8) {
+                    // 💡 Strip ```html ... ``` if present
+                    var cleanedContent = content
+                    if cleanedContent.hasPrefix("```html") && cleanedContent.hasSuffix("```") {
+                        cleanedContent = cleanedContent
+                            .replacingOccurrences(of: "```html", with: "")
+                            .replacingOccurrences(of: "```", with: "")
+                            .trimmingCharacters(in: .whitespacesAndNewlines)
+                    }
+
+                    if let htmlData = cleanedContent.data(using: .utf8) {
                         do {
                             let attributedString = try NSAttributedString(
                                 data: htmlData,

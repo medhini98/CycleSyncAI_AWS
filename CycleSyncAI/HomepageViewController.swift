@@ -72,11 +72,11 @@ class HomepageViewController: UIViewController {
         headerCardView.layer.insertSublayer(cardGradient, at: 0)
 
         headerLabel.translatesAutoresizingMaskIntoConstraints = false
-        headerLabel.text = "Click away and today’s suggestions will appear here! 🦉"
+        headerLabel.text = "Tap below to explore your journey - your personalized plans await! 🦉✨"
         headerLabel.numberOfLines = 0
         headerLabel.textAlignment = .center
         headerLabel.font = UIFont(name: "Avenir", size: 16)
-        headerLabel.textColor = .darkGray
+        headerLabel.textColor = UIColor(red: 230/255, green: 100/255, blue: 140/255, alpha: 1)
         headerCardView.addSubview(headerLabel)
 
         view.addSubview(headerCardView)
@@ -100,10 +100,16 @@ class HomepageViewController: UIViewController {
     }
 
     func setupHomepageButtons() {
-        configureButton(eatButton, title: "What to Eat Today 🍽️", colors: [UIColor(red: 255/255, green: 153/255, blue: 179/255, alpha: 1), UIColor(red: 230/255, green: 130/255, blue: 150/255, alpha: 1)])
+        configureButton(eatButton, title: "What to Eat Today 🍽️", colors: [
+            UIColor(red: 1.0, green: 0.765, blue: 0.725, alpha: 1),  // #FFC3B9
+            UIColor(red: 0.996, green: 0.698, blue: 0.863, alpha: 1) // #FEB2DC
+        ])
         eatButton.addTarget(self, action: #selector(goToEatPlan), for: .touchUpInside)
         
-        configureButton(moveButton, title: "How to Move Today 🏋️‍♀️", colors: [UIColor(red: 0.7, green: 0.6, blue: 1.0, alpha: 1), UIColor(red: 0.6, green: 0.5, blue: 0.9, alpha: 1)])
+        configureButton(moveButton, title: "How to Move Today 🏋️‍♀️", colors: [
+            UIColor(red: 0.8, green: 0.757, blue: 0.969, alpha: 1),  // #CCC1F7
+            UIColor(red: 0.663, green: 0.776, blue: 1.0, alpha: 1)   // #A9C6FF
+        ])
         moveButton.addTarget(self, action: #selector(goToWorkoutPlan), for: .touchUpInside)
 
         buttonStack.axis = .vertical
@@ -152,7 +158,7 @@ class HomepageViewController: UIViewController {
         profileButton.translatesAutoresizingMaskIntoConstraints = false
         profileButton.setImage(UIImage(systemName: "person.circle.fill"), for: .normal)
         profileButton.tintColor = .white
-        profileButton.backgroundColor = UIColor(red: 179/255, green: 217/255, blue: 255/255, alpha: 1)
+        profileButton.backgroundColor = UIColor(red: 0.667, green: 0.776, blue: 1.0, alpha: 1) // #AAC6FF
         profileButton.layer.cornerRadius = 30
         profileButton.clipsToBounds = true
         profileButton.layer.shadowColor = UIColor.black.cgColor
@@ -200,11 +206,11 @@ class HomepageViewController: UIViewController {
             guideLabel.textColor = UIColor(red: 230/255, green: 100/255, blue: 140/255, alpha: 1)
             view.addSubview(guideLabel)
 
-            NSLayoutConstraint.activate([
-                guideLabel.centerXAnchor.constraint(equalTo: profileButton.centerXAnchor),
-                guideLabel.bottomAnchor.constraint(equalTo: arrowImageView.topAnchor, constant: -5),
-                guideLabel.widthAnchor.constraint(lessThanOrEqualToConstant: 120)
-            ])
+        NSLayoutConstraint.activate([
+            guideLabel.centerXAnchor.constraint(equalTo: profileButton.centerXAnchor, constant: -20),  // shifted left
+            guideLabel.bottomAnchor.constraint(equalTo: arrowImageView.topAnchor, constant: -15),      // shifted down
+            guideLabel.widthAnchor.constraint(lessThanOrEqualToConstant: 120)
+        ])
 
             guideLabel.alpha = 0
         }

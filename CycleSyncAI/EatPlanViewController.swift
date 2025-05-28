@@ -10,6 +10,8 @@ class EatPlanViewController: UIViewController {
     let gradientLayer = CAGradientLayer()
     let dietPlanContainerView = UIView()
     
+    let sectionTextColor = UIColor(red: 230/255, green: 100/255, blue: 140/255, alpha: 1)  // #E6648C
+    
     var userProfileData: UserProfile?
 
     override func viewDidLoad() {
@@ -27,6 +29,9 @@ class EatPlanViewController: UIViewController {
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         gradientLayer.frame = view.bounds
+        
+        styleEatPlanButton(backButton)
+        styleEatPlanButton(generateButton)
     }
 
     func setupGradientBackground() {
@@ -66,7 +71,7 @@ class EatPlanViewController: UIViewController {
         promptLabel.text = "What do you feel like eating today?"
         promptLabel.font = UIFont(name: "Avenir", size: 18)
         promptLabel.textAlignment = .center
-        promptLabel.textColor = UIColor(red: 102/255, green: 51/255, blue: 153/255, alpha: 1)  // dark lavender
+        promptLabel.textColor = sectionTextColor
         promptLabel.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(promptLabel)
 
@@ -96,7 +101,7 @@ class EatPlanViewController: UIViewController {
         taglineLabel.text = "Click below to get a personalized plan in minutes!"
         taglineLabel.font = UIFont(name: "Avenir", size: 16)
         taglineLabel.textAlignment = .center
-        taglineLabel.textColor = UIColor(red: 102/255, green: 51/255, blue: 153/255, alpha: 1) // dark lavender
+        taglineLabel.textColor = sectionTextColor
         taglineLabel.numberOfLines = 0
         taglineLabel.lineBreakMode = .byWordWrapping
         taglineLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -110,7 +115,7 @@ class EatPlanViewController: UIViewController {
         generateButton.translatesAutoresizingMaskIntoConstraints = false
         generateButton.addTarget(self, action: #selector(generateDietPlan), for: .touchUpInside)
         view.addSubview(generateButton)
-
+        
         NSLayoutConstraint.activate([
             taglineLabel.topAnchor.constraint(equalTo: mealPreferenceField.bottomAnchor, constant: 12),
             taglineLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
@@ -138,7 +143,7 @@ class EatPlanViewController: UIViewController {
         dietPlanTextView.isEditable = false
         dietPlanTextView.isScrollEnabled = true
         dietPlanTextView.backgroundColor = .clear
-        dietPlanTextView.textColor = UIColor(red: 102/255, green: 51/255, blue: 153/255, alpha: 1)
+        dietPlanTextView.textColor = sectionTextColor
         dietPlanTextView.font = UIFont(name: "Avenir", size: 16)
         dietPlanTextView.translatesAutoresizingMaskIntoConstraints = false
         dietPlanContainerView.addSubview(dietPlanTextView)
@@ -220,10 +225,12 @@ class EatPlanViewController: UIViewController {
         4. Add a one-line suggestion for ideal wake-up and bedtime routines for this user, based on their age, activity, and goal.
 
         5. Provide additional quick diet tips (not mentioned in the main diet plan) to help achieve \(profile.goal) during the \(phase) phase, considering the user’s medical conditions \(profile.medicalConditions) and dietary restrictions \(profile.dietaryRestrictions).
+        
+        6. Provide a concise grocery list for today’s meals, focusing on fresh, special, or phase-specific ingredients, excluding common pantry staples.
 
-        6. A kind, appreciative line recognizing the user’s commitment to their health. Optionally include a motivational line if it aligns well with the user’s goal (\(profile.goal)).
+        7. A kind, appreciative line recognizing the user’s commitment to their health. Optionally include a motivational line if it aligns well with the user’s goal (\(profile.goal)).
 
-        7. At the end, include a <h2>Sources</h2> section listing all the real, verifiable citations you used, numbered like. Format each citation on a separate line, like:
+        8. At the end, include a <h2>Sources</h2> section listing all the real, verifiable citations you used, numbered like. Format each citation on a separate line, like:
         [1] https://...
         [2] https://...
         [3] https://...
@@ -234,7 +241,7 @@ class EatPlanViewController: UIViewController {
 
         Please separate responses for each section clearly using headings (but do not label them as ‘Task 1’, ‘Task 2’, etc.).
 
-        While generating the diet plan, ensure you:
+        While generating the diet plan and creating the grocery list, ensure you:
         - Suggest meals/ingredients that support \(phase), \(profile.medicalConditions), and \(profile.goal).
         - Include foods beneficial for women in age group \(profile.ageGroup).
         - Avoid any foods harmful or exacerbating for \(profile.medicalConditions).
@@ -283,9 +290,17 @@ class EatPlanViewController: UIViewController {
                 let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
                 if let choices = json?["choices"] as? [[String: Any]],
                    let message = choices.first?["message"] as? [String: Any],
-                   let content = message["content"] as? String {
+                   var content = message["content"] as? String {
 
                     print("✅ Got API content!")
+
+                    // 💡 Strip ```html ... ``` if present
+                    if content.hasPrefix("```html") && content.hasSuffix("```") {
+                        content = content
+                            .replacingOccurrences(of: "```html", with: "")
+                            .replacingOccurrences(of: "```", with: "")
+                            .trimmingCharacters(in: .whitespacesAndNewlines)
+                    }
 
                     if let htmlData = content.data(using: .utf8) {
                         do {
@@ -314,6 +329,30 @@ class EatPlanViewController: UIViewController {
         }
 
         task.resume()
+    }
+    
+    func styleEatPlanButton(_ button: UIButton) {
+        button.setTitleColor(.white, for: .normal)  // ✅ white text
+        button.titleLabel?.font = UIFont(name: "Avenir", size: 18)
+        button.layer.cornerRadius = 12
+        button.layer.shadowColor = UIColor.black.cgColor
+        button.layer.shadowOpacity = 0.2
+        button.layer.shadowOffset = CGSize(width: 0, height: 2)
+        button.layer.shadowRadius = 6
+
+        button.layer.sublayers?.removeAll(where: { $0 is CAGradientLayer })
+
+        let gradientLayer = CAGradientLayer()
+        gradientLayer.frame = button.bounds
+        gradientLayer.cornerRadius = 12
+        gradientLayer.colors = [
+            UIColor(red: 1.0, green: 0.765, blue: 0.725, alpha: 1).cgColor,    // #FFC3B9
+            UIColor(red: 0.996, green: 0.698, blue: 0.863, alpha: 1).cgColor   // #FEB2DC
+        ]
+        gradientLayer.startPoint = CGPoint(x: 0, y: 0)
+        gradientLayer.endPoint = CGPoint(x: 1, y: 1)
+
+        button.layer.insertSublayer(gradientLayer, at: 0)
     }
 
     func setupTapToDismissKeyboard() {
