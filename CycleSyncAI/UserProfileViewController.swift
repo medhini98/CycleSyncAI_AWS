@@ -20,6 +20,8 @@ class UserProfileViewController: UIViewController, UIPickerViewDelegate, UIPicke
     let heightInField = UITextField()
     let heightContainerView = UIView()
     let weightField = UITextField()
+    let countryLabel = UILabel()
+    let countryField = UITextField()
     let medicalLabel = UILabel()
     let dietaryLabel = UILabel()
     let medicalOtherButton = UIButton(type: .system)
@@ -58,6 +60,7 @@ class UserProfileViewController: UIViewController, UIPickerViewDelegate, UIPicke
         setupScrollView()
         setupStyledBasicInfo()
         setupHeightAndWeightFields()
+        setupCountryField()
         setupTapToDismiss()
         setupMedicalAndDietarySections()
         setupGoalSection()
@@ -322,9 +325,14 @@ class UserProfileViewController: UIViewController, UIPickerViewDelegate, UIPicke
     
     @objc func handleSave() {
         let name = nameField.text ?? ""
+        
         let selectedAge = ageBuckets[agePicker.selectedRow(inComponent: 0)]
+        
         let height = heightUnitSegment.selectedSegmentIndex == 0 ? heightCmField.text ?? "" : "\(heightFtField.text ?? "") ft \(heightInField.text ?? "") in"
+        
         let weight = weightField.text ?? ""
+        
+        let country = countryField.text ?? ""
         
         var selectedMedical = medicalButtons.filter { $0.isSelected }.map { $0.title(for: .normal) ?? "" }
         if !medicalOtherField.isHidden, !medicalOtherField.text!.isEmpty {
@@ -363,6 +371,7 @@ class UserProfileViewController: UIViewController, UIPickerViewDelegate, UIPicke
         userDefaults.set(selectedAge, forKey: "age")
         userDefaults.set(height, forKey: "height")
         userDefaults.set(weight, forKey: "weight")
+        userDefaults.set(country, forKey: "country")
         userDefaults.set(selectedMedical, forKey: "medical")
         userDefaults.set(selectedDietary, forKey: "dietary")
         userDefaults.set(medicalOtherField.text ?? "", forKey: "medicalOther")
@@ -377,6 +386,7 @@ class UserProfileViewController: UIViewController, UIPickerViewDelegate, UIPicke
         heightFtField.text = ""
         heightInField.text = ""
         weightField.text = ""
+        countryField.text = ""
         agePicker.selectRow(0, inComponent: 0, animated: true)
         clearMedicalSelections()
         clearDietarySelections()
@@ -409,6 +419,7 @@ class UserProfileViewController: UIViewController, UIPickerViewDelegate, UIPicke
         userDefaults.removeObject(forKey: "age")
         userDefaults.removeObject(forKey: "height")
         userDefaults.removeObject(forKey: "weight")
+        userDefaults.removeObject(forKey: "country")
         userDefaults.removeObject(forKey: "medical")
         userDefaults.removeObject(forKey: "dietary")
         userDefaults.removeObject(forKey: "medicalOther")
@@ -605,6 +616,30 @@ class UserProfileViewController: UIViewController, UIPickerViewDelegate, UIPicke
         ])
     }
     
+    func setupCountryField() {
+        // Label
+        countryLabel.text = "Country"
+        styleLabel(countryLabel, size: 16)
+        countryLabel.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(countryLabel)
+
+        // Field
+        countryField.placeholder = "Enter your country"
+        countryField.translatesAutoresizingMaskIntoConstraints = false
+        styleTextField(countryField)
+        contentView.addSubview(countryField)
+
+        NSLayoutConstraint.activate([
+            countryLabel.topAnchor.constraint(equalTo: weightField.bottomAnchor, constant: 20),
+            countryLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
+
+            countryField.topAnchor.constraint(equalTo: countryLabel.bottomAnchor, constant: 10),
+            countryField.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
+            countryField.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
+            countryField.heightAnchor.constraint(equalToConstant: 40)
+        ])
+    }
+    
     func setupMedicalAndDietarySections() {
         // Medical Complications Section
         
@@ -615,7 +650,7 @@ class UserProfileViewController: UIViewController, UIPickerViewDelegate, UIPicke
 
 
         NSLayoutConstraint.activate([
-            medicalLabel.topAnchor.constraint(equalTo: weightField.bottomAnchor, constant: 30),
+            medicalLabel.topAnchor.constraint(equalTo: countryField.bottomAnchor, constant: 30),
             medicalLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20)
         ])
         
@@ -900,6 +935,8 @@ class UserProfileViewController: UIViewController, UIPickerViewDelegate, UIPicke
         
         heightCmField.text = userDefaults.string(forKey: "height")
         weightField.text = userDefaults.string(forKey: "weight")
+        
+        countryField.text = userDefaults.string(forKey: "country")
 
         if let savedMedical = userDefaults.array(forKey: "medical") as? [String] {
             for button in medicalButtons {

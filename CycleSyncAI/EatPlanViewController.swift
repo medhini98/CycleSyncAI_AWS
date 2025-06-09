@@ -216,9 +216,9 @@ class EatPlanViewController: UIViewController {
         - Use <p> to separate paragraphs.
 
         Provide:
-        1. A brief bullet list (5–6 points) summarizing the key dietary focuses and nutritional priorities relevant to the user’s menstrual phase \(phase), goal \(profile.goal), activity level \(profile.activityLevel), age group \(profile.ageGroup), medical conditions \(profile.medicalConditions), and dietary restrictions \(profile.dietaryRestrictions).
+        1. A brief bullet list (5–6 points) summarizing the key dietary focuses and nutritional priorities relevant to the user’s menstrual phase \(phase), goal \(profile.goal), activity level \(profile.activityLevel), age group \(profile.ageGroup), country \(profile.country), medical conditions \(profile.medicalConditions), and dietary restrictions \(profile.dietaryRestrictions).
 
-        2. Generate a personalized diet plan for a \(profile.ageGroup) woman, \(profile.height), \(profile.weight), with \(profile.medicalConditions) and \(profile.dietaryRestrictions), on day \(cycleDay) of her menstrual cycle (\(phase) phase). The user's goal is \(profile.goal) and current activity level is \(profile.activityLevel). Meal preference for today is \(preference). Include meal timings as well for each meal. Title this section as ‘Personalized Diet Plan’ (no need to include age, height, weight, or phase details in the subheading). Make sure to include seed suggestion in the diet based on \(phase) like 'Eat Flax & pumpkin seeds 🎃.' Make sure to include hydration instructions based on \(profile.ageGroup), \(profile.height), \(profile.weight), \(phase), \(profile.medicalConditions), \(profile.activityLevel), and \(profile.goal). Include meal timings.
+        2. Generate a personalized diet plan for a \(profile.ageGroup) woman, from , country \(profile.country) \(profile.height), \(profile.weight), with \(profile.medicalConditions) and \(profile.dietaryRestrictions), on day \(cycleDay) of her menstrual cycle (\(phase) phase). The user's goal is \(profile.goal) and current activity level is \(profile.activityLevel). Meal preference for today is \(preference). Include meal timings as well for each meal. Title this section as ‘Personalized Diet Plan’ (no need to include age, height, weight, or phase details in the subheading). Make sure to include seed suggestion in the diet based on \(phase) like 'Eat Flax & pumpkin seeds 🎃.' Make sure to include hydration instructions based on \(profile.ageGroup), \(profile.height), \(profile.weight), \(phase), \(profile.medicalConditions), \(profile.activityLevel), and \(profile.goal). Include meal timings.
 
         3. Provide a brief (2–3 sentence) explanation of why eating the recommended seeds is helpful during the \(phase) phase.
 
@@ -244,6 +244,7 @@ class EatPlanViewController: UIViewController {
         While generating the diet plan and creating the grocery list, ensure you:
         - Suggest meals/ingredients that support \(phase), \(profile.medicalConditions), and \(profile.goal).
         - Include foods beneficial for women in age group \(profile.ageGroup).
+        - Make sure most ingredients are locally available in country \(profile.country).
         - Avoid any foods harmful or exacerbating for \(profile.medicalConditions).
         - Respect all \(profile.dietaryRestrictions).
         - Avoid foods that may worsen PMS or related symptoms during \(phase).
