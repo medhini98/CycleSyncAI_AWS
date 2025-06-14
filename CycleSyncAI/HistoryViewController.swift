@@ -6,8 +6,9 @@
 //
 
 import UIKit
+import WebKit
 
-class HistoryViewController: UIViewController, UITableViewDelegate, UITableViewDataSource {
+class HistoryViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, WKNavigationDelegate {
 
     let gradientLayer = CAGradientLayer()
     let dietButton = UIButton(type: .system)
@@ -17,6 +18,7 @@ class HistoryViewController: UIViewController, UITableViewDelegate, UITableViewD
     var allPlans: [PlanModel] = []
     var filteredPlans: [PlanModel] = []
     var currentFilter: String = "diet"
+    var currentPlanForPDF: PlanModel?
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -111,6 +113,7 @@ class HistoryViewController: UIViewController, UITableViewDelegate, UITableViewD
         tableView.delegate = self
         tableView.dataSource = self
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "PlanCell")
+        tableView.register(PlanCell.self, forCellReuseIdentifier: "PlanCell")
         tableView.backgroundColor = .clear
         view.addSubview(tableView)
 
@@ -154,40 +157,44 @@ class HistoryViewController: UIViewController, UITableViewDelegate, UITableViewD
         present(alert, animated: true, completion: nil)
     }
     
-    func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle,
-                   forRowAt indexPath: IndexPath) {
-        if editingStyle == .delete {
-            let alert = UIAlertController(
-                title: "Delete Plan?",
-                message: "Are you sure you want to delete this plan?",
-                preferredStyle: .alert
-            )
-            
-            alert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
-            
-            alert.addAction(UIAlertAction(title: "Delete", style: .destructive, handler: { _ in
-                let planToDelete = self.filteredPlans[indexPath.row]
-                
-                // Remove from full list
-                if let indexInAll = self.allPlans.firstIndex(where: {
-                    $0.dateLabel == planToDelete.dateLabel &&
-                    $0.type == planToDelete.type &&
-                    $0.content == planToDelete.content
-                }) {
-                    self.allPlans.remove(at: indexInAll)
+    func generatePDFUsingWebView(from plan: PlanModel) {
+        print("🧾 WKWebView PDF for: \(plan.dateLabel)")
+
+        currentPlanForPDF = plan
+
+        let webView = WKWebView(frame: CGRect(x: 0, y: 0, width: 612, height: 792))
+        webView.navigationDelegate = self
+        view.addSubview(webView)  // ✅ must be added to view hierarchy to render properly
+
+        let html = plan.content.contains("<html")
+            ? plan.content
+            : "<html><body>\(plan.content)</body></html>"
+
+        webView.loadHTMLString(html, baseURL: nil)
+    }
+    
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        guard let plan = currentPlanForPDF else { return }
+
+        let config = WKPDFConfiguration()
+        webView.createPDF(configuration: config) { result in
+            switch result {
+            case .success(let data):
+                let fileName = "\(plan.type.capitalized)_\(Date().timeIntervalSince1970).pdf"
+                let tmpURL = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
+
+                do {
+                    try data.write(to: tmpURL)
+                    let activityVC = UIActivityViewController(activityItems: [tmpURL], applicationActivities: nil)
+                    self.present(activityVC, animated: true)
+                    print("✅ PDF created via WKWebView.")
+                } catch {
+                    print("❌ Failed to save WKWebView PDF: \(error)")
                 }
-                
-                // Remove from filtered list and update table
-                self.filteredPlans.remove(at: indexPath.row)
-                tableView.deleteRows(at: [indexPath], with: .fade)
-                
-                // Save updated list
-                if let data = try? JSONEncoder().encode(self.allPlans) {
-                    UserDefaults.standard.set(data, forKey: "savedPlans")
-                }
-            }))
-            
-            present(alert, animated: true, completion: nil)
+
+            case .failure(let error):
+                print("❌ WKWebView PDF failed: \(error)")
+            }
         }
     }
 
@@ -196,13 +203,58 @@ class HistoryViewController: UIViewController, UITableViewDelegate, UITableViewD
     }
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "PlanCell", for: indexPath)
+        guard let cell = tableView.dequeueReusableCell(withIdentifier: "PlanCell", for: indexPath) as? PlanCell else {
+            return UITableViewCell()
+        }
+
         let plan = filteredPlans[indexPath.row]
-        cell.textLabel?.text = "\(plan.dateLabel)"
-        cell.textLabel?.font = UIFont(name: "Avenir", size: 16)
-        cell.textLabel?.textColor = UIColor.darkGray
+        cell.titleLabel.text = plan.dateLabel
         cell.backgroundColor = UIColor.white.withAlphaComponent(0.85)
         cell.layer.cornerRadius = 8
+
+        // 📄 Download button action
+        cell.onDownloadTapped = {
+            self.generatePDFUsingWebView(from: plan)
+        }
+        
+
+        // 🗑️ Delete button action with confirmation alert
+        cell.deleteAction = { [weak self] in
+            guard let self = self else { return }
+
+            let alert = UIAlertController(
+                title: "Delete Plan?",
+                message: "Are you sure you want to delete this plan?",
+                preferredStyle: .alert
+            )
+
+            alert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
+
+            alert.addAction(UIAlertAction(title: "Delete", style: .destructive, handler: { _ in
+                let planToDelete = self.filteredPlans[indexPath.row]
+
+                // Remove from allPlans
+                if let indexInAll = self.allPlans.firstIndex(where: {
+                    $0.dateLabel == planToDelete.dateLabel &&
+                    $0.type == planToDelete.type &&
+                    $0.content == planToDelete.content
+                }) {
+                    self.allPlans.remove(at: indexInAll)
+                }
+
+                // Remove from filtered and table
+                self.filteredPlans.remove(at: indexPath.row)
+                self.tableView.deleteRows(at: [indexPath], with: .fade)
+
+                // Save updated list
+                if let data = try? JSONEncoder().encode(self.allPlans) {
+                    UserDefaults.standard.set(data, forKey: "savedPlans")
+                }
+            }))
+
+            self.present(alert, animated: true, completion: nil)
+        }
+
         return cell
     }
 

@@ -13,6 +13,7 @@ class EatPlanViewController: UIViewController {
     let sectionTextColor = UIColor(red: 230/255, green: 100/255, blue: 140/255, alpha: 1)  // #E6648C
     
     var userProfileData: UserProfile?
+    var generatedHTML: String?
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -326,11 +327,13 @@ class EatPlanViewController: UIViewController {
                                 documentAttributes: nil)
                             DispatchQueue.main.async {
                                 self.dietPlanTextView.attributedText = attributedString
+                                self.generatedHTML = content
+                                print("✅ Saving content to plan: \(content.prefix(300))")
                                 
                                 let plan = PlanModel(
                                     type: "diet",
                                     dateLabel: self.formattedDateLabel(start: Date(), end: nil), // 👈 will support endDate later
-                                    content: content
+                                    content: content // This is what gets saved
                                 )
                                 PlanHistoryManager.shared.savePlan(plan)
                                 print("✅ Diet plan saved to history!")

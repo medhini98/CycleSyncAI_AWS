@@ -18,8 +18,6 @@ class WorkoutPlanViewController: UIViewController {
         setupPromptLabel()
         setupGenerateButton()
         setupWorkoutPlanTextView()
-
-
     }
 
     override func viewDidLayoutSubviews() {
