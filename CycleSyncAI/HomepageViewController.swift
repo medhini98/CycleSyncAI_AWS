@@ -10,6 +10,7 @@ class HomepageViewController: UIViewController {
     let creditsLabel = UILabel()
     let eatButton = UIButton(type: .system)
     let moveButton = UIButton(type: .system)
+    let historyButton = UIButton(type: .system)
     let profileButton = UIButton(type: .system)
     let buttonStack = UIStackView()
     let gradientLayer = CAGradientLayer()
@@ -111,13 +112,21 @@ class HomepageViewController: UIViewController {
             UIColor(red: 0.663, green: 0.776, blue: 1.0, alpha: 1)   // #A9C6FF
         ])
         moveButton.addTarget(self, action: #selector(goToWorkoutPlan), for: .touchUpInside)
+        
+        configureButton(historyButton, title: "View My History 📖", colors: [
+            UIColor(red: 0.875, green: 0.925, blue: 1.0, alpha: 1),   // pastel sky blue
+            UIColor(red: 0.9, green: 0.85, blue: 1.0, alpha: 1)       // soft lavender
+        ])
+        historyButton.addTarget(self, action: #selector(goToHistory), for: .touchUpInside)
 
         buttonStack.axis = .vertical
         buttonStack.spacing = 30
         buttonStack.alignment = .center
         buttonStack.translatesAutoresizingMaskIntoConstraints = false
+
         buttonStack.addArrangedSubview(eatButton)
         buttonStack.addArrangedSubview(moveButton)
+        buttonStack.addArrangedSubview(historyButton)
 
         view.addSubview(buttonStack)
 
@@ -126,6 +135,8 @@ class HomepageViewController: UIViewController {
             eatButton.heightAnchor.constraint(equalToConstant: 60),
             moveButton.widthAnchor.constraint(equalToConstant: 280),
             moveButton.heightAnchor.constraint(equalToConstant: 60),
+            historyButton.widthAnchor.constraint(equalToConstant: 280),
+            historyButton.heightAnchor.constraint(equalToConstant: 60),
 
             buttonStack.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             buttonStack.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: -20)
@@ -272,6 +283,7 @@ class HomepageViewController: UIViewController {
                 ageGroup: defaults.string(forKey: "age") ?? "",
                 height: defaults.string(forKey: "height") ?? "",
                 weight: defaults.string(forKey: "weight") ?? "",
+                country: defaults.string(forKey: "country") ?? "",
                 medicalConditions: (defaults.array(forKey: "medical") as? [String])?.joined(separator: ", ") ?? "",
                 dietaryRestrictions: (defaults.array(forKey: "dietary") as? [String])?.joined(separator: ", ") ?? "",
                 goal: defaults.string(forKey: "goal") ?? "",
@@ -297,6 +309,7 @@ class HomepageViewController: UIViewController {
                 ageGroup: defaults.string(forKey: "age") ?? "",
                 height: defaults.string(forKey: "height") ?? "",
                 weight: defaults.string(forKey: "weight") ?? "",
+                country: defaults.string(forKey: "country") ?? "",
                 medicalConditions: (defaults.array(forKey: "medical") as? [String])?.joined(separator: ", ") ?? "",
                 dietaryRestrictions: (defaults.array(forKey: "dietary") as? [String])?.joined(separator: ", ") ?? "",
                 goal: defaults.string(forKey: "goal") ?? "",
@@ -309,6 +322,14 @@ class HomepageViewController: UIViewController {
             // Navigate to WorkoutPlanViewController
             navigateTo(viewController: workoutPlanVC)
         }
+    }
+    
+    @objc func goToHistory() {
+        let historyVC = HistoryViewController()
+        let navController = UINavigationController(rootViewController: historyVC)
+        navController.modalPresentationStyle = .fullScreen
+        navController.modalTransitionStyle = .crossDissolve
+        present(navController, animated: true, completion: nil)
     }
 
     func navigateTo(viewController: UIViewController) {

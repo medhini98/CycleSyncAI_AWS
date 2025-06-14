@@ -162,6 +162,20 @@ class EatPlanViewController: UIViewController {
             dietPlanTextView.bottomAnchor.constraint(equalTo: dietPlanContainerView.bottomAnchor, constant: -12)
         ])
     }
+    
+    func formattedDateLabel(start: Date = Date(), end: Date? = nil) -> String {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "MMM d"
+
+        let timeFormatter = DateFormatter()
+        timeFormatter.dateFormat = "h:mm a"
+
+        if let end = end {
+            return "\(dateFormatter.string(from: start))–\(dateFormatter.string(from: end)) • \(timeFormatter.string(from: Date()))"
+        } else {
+            return "\(dateFormatter.string(from: start)) • \(timeFormatter.string(from: Date()))"
+        }
+    }
 
     @objc func generateDietPlan() {
         print("✅ Generate Diet Plan button tapped!")
@@ -312,6 +326,14 @@ class EatPlanViewController: UIViewController {
                                 documentAttributes: nil)
                             DispatchQueue.main.async {
                                 self.dietPlanTextView.attributedText = attributedString
+                                
+                                let plan = PlanModel(
+                                    type: "diet",
+                                    dateLabel: self.formattedDateLabel(start: Date(), end: nil), // 👈 will support endDate later
+                                    content: content
+                                )
+                                PlanHistoryManager.shared.savePlan(plan)
+                                print("✅ Diet plan saved to history!")
                             }
                         } catch {
                             print("❌ Failed to render API HTML: \(error)")
