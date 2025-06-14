@@ -18,8 +18,6 @@ class WorkoutPlanViewController: UIViewController {
         setupPromptLabel()
         setupGenerateButton()
         setupWorkoutPlanTextView()
-
-
     }
 
     override func viewDidLayoutSubviews() {
@@ -110,6 +108,20 @@ class WorkoutPlanViewController: UIViewController {
             generateButton.widthAnchor.constraint(equalToConstant: 200),
             generateButton.heightAnchor.constraint(equalToConstant: 50)
         ])
+    }
+    
+    func formattedDateLabel(start: Date = Date(), end: Date? = nil) -> String {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "MMM d"
+
+        let timeFormatter = DateFormatter()
+        timeFormatter.dateFormat = "h:mm a"
+
+        if let end = end {
+            return "\(dateFormatter.string(from: start))–\(dateFormatter.string(from: end)) • \(timeFormatter.string(from: Date()))"
+        } else {
+            return "\(dateFormatter.string(from: start)) • \(timeFormatter.string(from: Date()))"
+        }
     }
 
     @objc func generateWorkoutPlan() {
@@ -316,6 +328,14 @@ class WorkoutPlanViewController: UIViewController {
                                 documentAttributes: nil)
                             DispatchQueue.main.async {
                                 self.workoutPlanTextView.attributedText = attributedString
+                                
+                                let plan = PlanModel(
+                                    type: "workout",
+                                    dateLabel: self.formattedDateLabel(start: Date(), end: nil),
+                                    content: content
+                                )
+                                PlanHistoryManager.shared.savePlan(plan)
+                                print("✅ Workout plan saved to history!")
                             }
                         } catch {
                             print("❌ Failed to render API HTML: \(error)")

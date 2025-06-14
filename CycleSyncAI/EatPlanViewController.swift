@@ -13,6 +13,7 @@ class EatPlanViewController: UIViewController {
     let sectionTextColor = UIColor(red: 230/255, green: 100/255, blue: 140/255, alpha: 1)  // #E6648C
     
     var userProfileData: UserProfile?
+    var generatedHTML: String?
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -161,6 +162,20 @@ class EatPlanViewController: UIViewController {
             dietPlanTextView.trailingAnchor.constraint(equalTo: dietPlanContainerView.trailingAnchor, constant: -12),
             dietPlanTextView.bottomAnchor.constraint(equalTo: dietPlanContainerView.bottomAnchor, constant: -12)
         ])
+    }
+    
+    func formattedDateLabel(start: Date = Date(), end: Date? = nil) -> String {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "MMM d"
+
+        let timeFormatter = DateFormatter()
+        timeFormatter.dateFormat = "h:mm a"
+
+        if let end = end {
+            return "\(dateFormatter.string(from: start))–\(dateFormatter.string(from: end)) • \(timeFormatter.string(from: Date()))"
+        } else {
+            return "\(dateFormatter.string(from: start)) • \(timeFormatter.string(from: Date()))"
+        }
     }
 
     @objc func generateDietPlan() {
@@ -312,6 +327,16 @@ class EatPlanViewController: UIViewController {
                                 documentAttributes: nil)
                             DispatchQueue.main.async {
                                 self.dietPlanTextView.attributedText = attributedString
+                                self.generatedHTML = content
+                                print("✅ Saving content to plan: \(content.prefix(300))")
+                                
+                                let plan = PlanModel(
+                                    type: "diet",
+                                    dateLabel: self.formattedDateLabel(start: Date(), end: nil), // 👈 will support endDate later
+                                    content: content // This is what gets saved
+                                )
+                                PlanHistoryManager.shared.savePlan(plan)
+                                print("✅ Diet plan saved to history!")
                             }
                         } catch {
                             print("❌ Failed to render API HTML: \(error)")
