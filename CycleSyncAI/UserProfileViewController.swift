@@ -331,6 +331,8 @@ class UserProfileViewController: UIViewController, UIPickerViewDelegate, UIPicke
         let height = heightUnitSegment.selectedSegmentIndex == 0 ? heightCmField.text ?? "" : "\(heightFtField.text ?? "") ft \(heightInField.text ?? "") in"
         
         let weight = weightField.text ?? ""
+        let weightUnit = weightUnitSegment.selectedSegmentIndex == 0 ? "kg" : "lbs"
+        let fullWeight = "\(weight) \(weightUnit)"
         
         let country = countryField.text ?? ""
         
@@ -370,7 +372,7 @@ class UserProfileViewController: UIViewController, UIPickerViewDelegate, UIPicke
         userDefaults.set(name, forKey: "name")
         userDefaults.set(selectedAge, forKey: "age")
         userDefaults.set(height, forKey: "height")
-        userDefaults.set(weight, forKey: "weight")
+        userDefaults.set(fullWeight, forKey: "weight")
         userDefaults.set(country, forKey: "country")
         userDefaults.set(selectedMedical, forKey: "medical")
         userDefaults.set(selectedDietary, forKey: "dietary")
