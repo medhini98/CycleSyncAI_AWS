@@ -22,6 +22,30 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         let rootVC = HomepageViewController()  // or whatever your home screen is
         window?.rootViewController = rootVC
         window?.makeKeyAndVisible()
+        
+        // Fetch saved filenames from local history
+        let defaults = UserDefaults.standard
+        if !defaults.bool(forKey: "notificationDefaultsSet") {
+            // Set all toggles ON by default (with defensive trimming)
+            ["morningReminderEnabled", "phaseChangeEnabled", "hydrationEnabled", "followUpEnabled"].forEach {
+                let trimmedKey = $0.trimmingCharacters(in: .whitespacesAndNewlines)
+                defaults.set(true, forKey: trimmedKey)
+            }
+            defaults.set(true, forKey: "notificationDefaultsSet")
+            print("✅ Notification defaults set to ON")
+        }
+
+        // Morning reminder
+        // ⏰ Schedule morning reminder (if needed)
+        let combinedFilenames = PlanHistoryManager.shared.getAllDateLabels()
+        NotificationManager.shared.scheduleMorningReminderIfNeeded(filenames: combinedFilenames)
+
+            // 🌀 Schedule phase change reminder (centralized logic)
+        NotificationManager.shared.triggerPhaseReminderIfNeeded()
+        
+        // 💧 Schedule hydration reminders based on current phase (if enabled)
+        scheduleHydrationIfNeeded()
+
     }
 
     func sceneDidDisconnect(_ scene: UIScene) {
@@ -51,7 +75,20 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         // Use this method to save data, release shared resources, and store enough scene-specific state information
         // to restore the scene back to its current state.
     }
+    
+    private func scheduleHydrationIfNeeded() {
+        guard UserDefaults.standard.bool(forKey: "hydrationEnabled") else { return }
 
+        HealthManager.shared.fetchCurrentCycleStartDate { startDate in
+            guard let start = startDate,
+                  let cycleDay = HealthManager.shared.calculateCycleDay(from: start) else {
+                print("❌ Could not determine cycle day for hydration scheduling")
+                return
+            }
+            let phase = HealthManager.shared.determinePhase(for: cycleDay, menstrualEndDay: HealthManager.shared.lastMenstrualEndDay)
+            NotificationManager.shared.scheduleHydrationNotifications(for: phase)
+        }
+    }
 
 }
 
