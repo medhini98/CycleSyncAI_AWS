@@ -77,6 +77,14 @@ class HealthManager {
         guard let days = days else { return nil }
         return days + 1  // cycle days start from 1
     }
+    
+    func calculateCycleDay(from cycleStartDate: Date, to targetDate: Date) -> Int? {
+        let startOfStartDate = Calendar.current.startOfDay(for: cycleStartDate)
+        let startOfTargetDate = Calendar.current.startOfDay(for: targetDate)
+        let days = Calendar.current.dateComponents([.day], from: startOfStartDate, to: startOfTargetDate).day
+        guard let days = days else { return nil }
+        return days + 1  // cycle days start from 1
+    }
 
     func determinePhase(for cycleDay: Int, menstrualEndDay: Int?) -> String {
         if cycleDay > 35 {
