@@ -30,4 +30,8 @@ class PlanHistoryManager {
     func clearPlans() {
         UserDefaults.standard.removeObject(forKey: key)
     }
+    
+    func getAllDateLabels() -> [String] {
+        return loadPlans().map { $0.dateLabel }
+    }
 }

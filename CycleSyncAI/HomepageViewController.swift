@@ -12,6 +12,7 @@ class HomepageViewController: UIViewController {
     let moveButton = UIButton(type: .system)
     let historyButton = UIButton(type: .system)
     let profileButton = UIButton(type: .system)
+    let settingsButton = UIButton(type: .system)
     let buttonStack = UIStackView()
     let gradientLayer = CAGradientLayer()
 
@@ -24,6 +25,7 @@ class HomepageViewController: UIViewController {
         setupHomepageButtons()
         setupHeaderCard()
         setupFloatingProfileButton()
+        setupFloatingSettingsButton()
         setupArrowImage()
         setupGuideLabel()
         setupCreditsLabel()
@@ -164,6 +166,32 @@ class HomepageViewController: UIViewController {
         gradientLayer.cornerRadius = 12
         button.layer.insertSublayer(gradientLayer, at: 0)
     }
+    
+    func setupFloatingSettingsButton() {
+        settingsButton.translatesAutoresizingMaskIntoConstraints = false
+        settingsButton.setImage(UIImage(systemName: "gearshape.fill"), for: .normal)
+        settingsButton.tintColor = .white
+        settingsButton.backgroundColor = UIColor(red: 0.667, green: 0.776, blue: 1.0, alpha: 1)
+        settingsButton.layer.cornerRadius = 30
+        settingsButton.clipsToBounds = true
+        settingsButton.layer.shadowColor = UIColor.black.cgColor
+        settingsButton.layer.shadowOpacity = 0.2
+        settingsButton.layer.shadowOffset = CGSize(width: 0, height: 2)
+        settingsButton.layer.shadowRadius = 6
+        settingsButton.addTarget(self, action: #selector(goToSettings), for: .touchUpInside)
+
+        view.addSubview(settingsButton)
+        
+        settingsButton.alpha = 0
+        settingsButton.transform = CGAffineTransform(translationX: -30, y: 0)
+
+        NSLayoutConstraint.activate([
+            settingsButton.widthAnchor.constraint(equalToConstant: 60),
+            settingsButton.heightAnchor.constraint(equalToConstant: 60),
+            settingsButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
+            settingsButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -20)
+        ])
+    }
 
     func setupFloatingProfileButton() {
         profileButton.translatesAutoresizingMaskIntoConstraints = false
@@ -251,11 +279,13 @@ class HomepageViewController: UIViewController {
                 self.headerCardView.alpha = 1
                 self.creditsLabel.alpha = 1
                 self.profileButton.alpha = 1
+                self.settingsButton.alpha = 1
                 self.guideLabel.alpha = 1
                 self.arrowImageView.alpha = 1
 
                 self.buttonStack.transform = .identity
                 self.profileButton.transform = .identity
+                self.settingsButton.transform = .identity
                 self.arrowImageView.transform = .identity
 
                 UIView.animate(withDuration: 1.5, delay: 0, options: [.autoreverse, .repeat], animations: {
@@ -263,6 +293,11 @@ class HomepageViewController: UIViewController {
                 }, completion: nil)
             }
         })
+    }
+    
+    @objc func goToSettings() {
+        let settingsVC = SettingsViewController()
+        navigateTo(viewController: settingsVC)
     }
 
     @objc func goToProfile() {
