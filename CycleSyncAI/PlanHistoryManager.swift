@@ -16,6 +16,13 @@ class PlanHistoryManager {
         existing.insert(plan, at: 0) // newest first
         if let data = try? JSONEncoder().encode(existing) {
             UserDefaults.standard.set(data, forKey: key)
+            
+            let isoFormatter = DateFormatter()
+                isoFormatter.dateFormat = "yyyy-MM-dd"
+                let todayStr = isoFormatter.string(from: Date())
+                if UserDefaults.standard.string(forKey: "firstPlanDate") == nil {
+                    UserDefaults.standard.set(todayStr, forKey: "firstPlanDate")
+                }
         }
     }
 
