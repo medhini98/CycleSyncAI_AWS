@@ -45,6 +45,8 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         
         // 💧 Schedule hydration reminders based on current phase (if enabled)
         scheduleHydrationIfNeeded()
+        
+        NotificationManager.shared.scheduleLogReminderNotification()
 
     }
 

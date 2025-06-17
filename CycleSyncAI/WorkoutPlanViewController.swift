@@ -16,6 +16,7 @@ class WorkoutPlanViewController: UIViewController {
     var userProfileData: UserProfile?
     var selectedStartDate: Date?
     var selectedEndDate: Date?
+    var generatedHTML: String?
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -214,24 +215,30 @@ class WorkoutPlanViewController: UIViewController {
         ])
     }
     
-    func formattedDateLabel(start: Date = Date(), end: Date? = nil) -> String {
+    func formattedDateLabel(start: Date, end: Date?, planType: String) -> String {
         let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "MMM d"
+        dateFormatter.dateFormat = "MMM dd"
+
+        let readableLabel: String
+        if let end = end, Calendar.current.isDate(start, inSameDayAs: end) == false {
+            readableLabel = "\(dateFormatter.string(from: start))–\(dateFormatter.string(from: end))"
+        } else {
+            readableLabel = dateFormatter.string(from: start)
+        }
 
         let timeFormatter = DateFormatter()
         timeFormatter.dateFormat = "h:mm a"
+        let timeString = timeFormatter.string(from: Date())
 
-        if let end = end {
-            return "\(dateFormatter.string(from: start))–\(dateFormatter.string(from: end)) • \(timeFormatter.string(from: Date()))"
-        } else {
-            return "\(dateFormatter.string(from: start)) • \(timeFormatter.string(from: Date()))"
-        }
+        let prefix = planType.capitalized + " Plan"  // "Diet Plan" or "Workout Plan"
+
+        return "\(prefix) \(readableLabel) • \(timeString)"
     }
 
     @objc func generateWorkoutPlan() {
         print("✅ Generate Workout Plan button tapped!")
         
-        self.workoutPlanWebView.loadHTMLString("<html><body><p>⏳ Generating workout plan...</p></body></html>", baseURL: nil)
+        self.workoutPlanWebView.loadHTMLString("<html><body><p style='font-size: 18px;'>⏳ Generating workout plan...</p></body></html>", baseURL: nil)
 
         guard let profile = self.userProfileData else {
             print("❌ No user profile data found.")
@@ -314,6 +321,16 @@ class WorkoutPlanViewController: UIViewController {
         let isDateRange = (endDate != nil && startDate != endDate!)
         let phaseList = Array(Set(days.map { $0.phase })).joined(separator: ", ")
         let cycleDay = sortedDays.first?.cycleDay ?? 1
+        
+        let today = Date()
+        let isoFormatter = DateFormatter()
+        isoFormatter.dateFormat = "yyyy-MM-dd"
+        let todayStr = isoFormatter.string(from: today)
+        let firstPlanDateStr = UserDefaults.standard.string(forKey: "firstPlanDate") ?? todayStr
+        
+        let (x, N, P) = TrackerManager.shared.adherenceSummary(since: firstPlanDateStr, to: todayStr, planType: "workout")  // or "diet"
+
+        let adherenceNote = "The user has followed their diet plan for \(x)/\(N) days with an average adherence of \(Int(P * 100))%."
 
         let prompt: String
 
@@ -336,7 +353,7 @@ class WorkoutPlanViewController: UIViewController {
             - Apply this layout strictly. Never skip or reorder columns. Never omit the header row.
 
             <h2>Personalized Workout Plan</h2>
-            Generate a daily workout plan for each day from \(startStr) to \(endStr) (inclusive), based on:
+            Generate a daily workout plan for each day from \(startStr) to \(endStr) (inclusive of both), based on:
             - Age group: \(profile.ageGroup)
             - Height: \(profile.height), Weight: \(profile.weight)
             - Goal: \(profile.goal)
@@ -346,19 +363,22 @@ class WorkoutPlanViewController: UIViewController {
             - Dietary restrictions: \(profile.dietaryRestrictions)
             - Menstrual phases (one of: \(phaseList))
             - Starting from cycle day \(cycleDay), increasing daily
+            - Adjust plan difficulty based on: \(adherenceNote):
+              • Low adherence → lighter workouts, shorter sessions, more encouragement.
+              • High adherence → more challenging, diverse routines with progression.
 
             For each day:
             - Specify the date, menstrual phase, and cycle day
             - State the recommended intensity (Low, Medium, or High)
             - Give a main workout category (e.g., Strength, HIIT, Yoga)
             - Provide detailed exercise instructions with short explanations
+            - Mention workout timing within each cell, like `@ 6:30 AM`.
             - Suggest weights in kg and lbs or common substitutes 🏋️
             - Include hydration tips 💧
             - Estimate calories burned based on weight and intensity
             - Recommend wake-up and sleep times
 
-            <h2>Workout Phase Guidelines</h2>
-            Use these when designing each day:
+            While generating the workout plan, use the following menstrual phase exercise intensity guidelines:
             - Menstrual: Low (light yoga, walk)
             - Follicular: Medium–High (strength, cardio)
             - Ovulation: High (HIIT, spin)
@@ -443,6 +463,9 @@ class WorkoutPlanViewController: UIViewController {
             - Avoid any exercises harmful or exacerbating for \(profile.medicalConditions).
             - Respect all \(profile.dietaryRestrictions).
             - Avoid exercises that may worsen PMS or related symptoms during \(phase).
+            - Adjust plan difficulty based on: \(adherenceNote):
+              • Low adherence → lighter workouts, shorter sessions, more encouragement.
+              • High adherence → more challenging, diverse routines with progression.
             """
         }
 
@@ -536,11 +559,13 @@ class WorkoutPlanViewController: UIViewController {
 
                     if let htmlData = cleanedContent.data(using: .utf8) {
                         DispatchQueue.main.async {
-                            self.workoutPlanWebView.loadHTMLString(content, baseURL: nil)
+                            self.workoutPlanWebView.loadHTMLString(cleanedContent, baseURL: nil)
+                            self.generatedHTML = cleanedContent
+
                             let plan = PlanModel(
                                 type: "workout",
-                                dateLabel: self.formattedDateLabel(start: startDate, end: endDate),
-                                content: content
+                                dateLabel: self.formattedDateLabel(start: startDate, end: endDate, planType: "workout"),
+                                content: cleanedContent
                             )
                             PlanHistoryManager.shared.savePlan(plan)
                             print("✅ Workout plan saved to history!")
@@ -549,9 +574,17 @@ class WorkoutPlanViewController: UIViewController {
 
                 } else {
                     print("❌ Unexpected API response format.")
+                    DispatchQueue.main.async {
+                        self.generateButton.isEnabled = true
+                        self.generateButton.alpha = 1.0
+                    }
                 }
             } catch {
                 print("❌ Failed to parse API response: \(error)")
+                DispatchQueue.main.async {
+                    self.generateButton.isEnabled = true
+                    self.generateButton.alpha = 1.0
+                }
             }
         }
 

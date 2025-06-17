@@ -229,6 +229,27 @@ class NotificationManager {
     }
     
     
-    func scheduleMealWorkoutFollowups() { /* coming soon */ }
+    func scheduleLogReminderNotification() {
+        let center = UNUserNotificationCenter.current()
+        let content = UNMutableNotificationContent()
+        content.title = "📝 Log your day"
+        content.body = "Don't forget to check off your meals, workout, and hydration goals!"
+        content.sound = .default
+
+        var dateComponents = DateComponents()
+        dateComponents.hour = 22
+        dateComponents.minute = 30
+
+        let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
+        let request = UNNotificationRequest(identifier: "logReminder", content: content, trigger: trigger)
+
+        center.add(request) { error in
+            if let error = error {
+                print("❌ Failed to schedule log reminder: \(error.localizedDescription)")
+            } else {
+                print("✅ Scheduled log reminder at 10:30 PM")
+            }
+        }
+    }
 
 }

@@ -263,30 +263,46 @@ class EatPlanViewController: UIViewController {
         ])
     }
     
-    func formattedDateLabel(start: Date = Date(), end: Date? = nil) -> String {
+    func formattedDateLabel(start: Date, end: Date?, planType: String) -> String {
         let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "MMM d"
+        dateFormatter.dateFormat = "MMM dd"
+
+        let readableLabel: String
+        if let end = end, Calendar.current.isDate(start, inSameDayAs: end) == false {
+            readableLabel = "\(dateFormatter.string(from: start))–\(dateFormatter.string(from: end))"
+        } else {
+            readableLabel = dateFormatter.string(from: start)
+        }
 
         let timeFormatter = DateFormatter()
         timeFormatter.dateFormat = "h:mm a"
+        let timeString = timeFormatter.string(from: Date())
 
-        if let end = end {
-            return "\(dateFormatter.string(from: start))–\(dateFormatter.string(from: end)) • \(timeFormatter.string(from: Date()))"
-        } else {
-            return "\(dateFormatter.string(from: start)) • \(timeFormatter.string(from: Date()))"
-        }
+        let prefix = planType.capitalized + " Plan"  // "Diet Plan" or "Workout Plan"
+
+        return "\(prefix) \(readableLabel) • \(timeString)"
     }
 
     @objc func generateDietPlan() {
         print("✅ Generate Diet Plan button tapped!")
         
-        self.dietPlanWebView.loadHTMLString("<html><body><p>⏳ Generating diet plan...</p></body></html>", baseURL: nil)
+        let loadingHTML = """
+        <html>
+          <body style="font-family: -apple-system; text-align: center; font-size: 20px; padding-top: 100px;">
+            ⏳ Generating your personalized diet plan...
+          </body>
+        </html>
+        """
+        self.dietPlanWebView.loadHTMLString(loadingHTML, baseURL: nil)
 
         guard let profile = self.userProfileData else {
             print("❌ No user profile data found.")
             self.dietPlanWebView.loadHTMLString("<html><body><p>⚠️ Please complete your user profile first.</p></body></html>", baseURL: nil)
             return
         }
+        
+        generateButton.isEnabled = false
+        generateButton.alpha = 0.5  // Optional: gray it out
 
         HealthManager.shared.requestAuthorization { success, error in
             if success {
@@ -294,6 +310,8 @@ class EatPlanViewController: UIViewController {
                     guard let cycleStartDate = cycleStartDate else {
                         DispatchQueue.main.async {
                             self.dietPlanWebView.loadHTMLString("<html><body><p>⚠️ ⚠️ No menstrual data found. Please log your period in the Health app.</p></body></html>", baseURL: nil)
+                            self.generateButton.isEnabled = true
+                            self.generateButton.alpha = 1.0
                         }
                         return
                     }
@@ -340,6 +358,8 @@ class EatPlanViewController: UIViewController {
             } else {
                 DispatchQueue.main.async {
                     self.dietPlanWebView.loadHTMLString("<html><body><p>⚠️ HealthKit authorization failed.</p></body></html>", baseURL: nil)
+                    self.generateButton.isEnabled = true
+                    self.generateButton.alpha = 1.0
                 }
             }
         }
@@ -369,6 +389,16 @@ class EatPlanViewController: UIViewController {
         let isDateRange = (endDate != nil && startDate != endDate!)
         let phaseList = Array(Set(days.map { $0.phase })).joined(separator: ", ")
         let cycleDay = sortedDays.first?.cycleDay ?? 1
+        
+        let today = Date()
+        let isoFormatter = DateFormatter()
+        isoFormatter.dateFormat = "yyyy-MM-dd"
+        let todayStr = isoFormatter.string(from: today)
+        let firstPlanDateStr = UserDefaults.standard.string(forKey: "firstPlanDate") ?? todayStr
+        
+        let (x, N, P) = TrackerManager.shared.adherenceSummary(since: firstPlanDateStr, to: todayStr, planType: "diet")  // or "workout"
+
+        let adherenceNote = "The user has followed their diet plan for \(x)/\(N) days with an average adherence of \(Int(P * 100))%."
 
         let prompt: String
 
@@ -392,7 +422,7 @@ class EatPlanViewController: UIViewController {
         - Apply this layout strictly. Never skip or reorder columns. Never omit the header row.
 
         <h2>Personalized Diet Plan</h2>
-        Generate a daily meal plan for each day from \(startStr) to \(endStr) (inclusive), based on:
+        Generate a daily meal plan for each day from \(startStr) to \(endStr) (inclusive of both), based on:
         - Age group: \(profile.ageGroup)
         - Height: \(profile.height) and Weight: \(profile.weight)
         - Country: \(profile.country)
@@ -403,9 +433,10 @@ class EatPlanViewController: UIViewController {
         - Menstrual phase (one of: \(phaseList))
         - Starting from cycle day \(cycleDay)
         - Meal preference: \(mealPreferenceField.text ?? "No preference")
+        - \(adherenceNote)
 
         <h2>Meal Structure Guidelines (Biology-Based)</h2>
-        - Always include: Early Drink, Breakfast, Mid-Morning Snack, Lunch, Evening Snack, Dinner
+        - Always include: Early Drink, Breakfast, Mid-Morning Snack, Lunch, Evening Snack, Dinner. For each item, clearly state the suggested time in the same table cell (e.g., @ 10:30 AM).
         - Adjust meals based on menstrual phase guidelines
 
         <h2>Other Instructions</h2>
@@ -467,6 +498,7 @@ class EatPlanViewController: UIViewController {
                     - Avoid any foods harmful or exacerbating for \(profile.medicalConditions).
                     - Respect all \(profile.dietaryRestrictions).
                     - Avoid foods that may worsen PMS or related symptoms during \(phase).
+                    - Take into consideration: \(adherenceNote)
                     """
         }
 
@@ -526,11 +558,15 @@ class EatPlanViewController: UIViewController {
                     DispatchQueue.main.async {
                         self.dietPlanWebView.loadHTMLString(content, baseURL: nil)
                         self.generatedHTML = content
+                        
+                        self.generateButton.isEnabled = true
+                        self.generateButton.alpha = 1.0
+                        
                         print("✅ Saving content to plan: \(content.prefix(300))")
 
                         let plan = PlanModel(
                             type: "diet",
-                            dateLabel: self.formattedDateLabel(start: startDate, end: endDate),
+                            dateLabel: self.formattedDateLabel(start: startDate, end: endDate, planType: "diet"),
                             content: content
                         )
                         PlanHistoryManager.shared.savePlan(plan)
@@ -539,9 +575,17 @@ class EatPlanViewController: UIViewController {
 
                 } else {
                     print("❌ Unexpected API response format.")
+                    DispatchQueue.main.async {
+                        self.generateButton.isEnabled = true
+                        self.generateButton.alpha = 1.0
+                    }
                 }
             } catch {
                 print("❌ Failed to parse API response: \(error)")
+                DispatchQueue.main.async {
+                    self.generateButton.isEnabled = true
+                    self.generateButton.alpha = 1.0
+                }
             }
         }
 
@@ -586,31 +630,30 @@ class EatPlanViewController: UIViewController {
         let isCustom = dateSegmentedControl.selectedSegmentIndex == 1
         startDatePicker.isHidden = !isCustom
         endDatePicker.isHidden = !isCustom
-        if !isCustom {
-            selectedStartDate = Date()
-            selectedEndDate = nil
-        } else {
-            selectedStartDate = startDatePicker.date
-            selectedEndDate = endDatePicker.date
-        }
+
+        // Delegate to validation logic
+        validateDateRange()
     }
 
     @objc func validateDateRange() {
         selectedStartDate = startDatePicker.date
         selectedEndDate = endDatePicker.date
 
-        if let start = selectedStartDate, let end = selectedEndDate {
-            // Prevent end < start
-            if end < start {
-                endDatePicker.date = start
-                selectedEndDate = start
-            }
+        guard let start = selectedStartDate else { return }
 
-            // Limit to 7 days max
-            let days = Calendar.current.dateComponents([.day], from: start, to: endDatePicker.date).day ?? 0
+        // Prevent end < start
+        if let end = selectedEndDate, end < start {
+            endDatePicker.date = start
+            selectedEndDate = start
+        }
+
+        // Limit to 7 days max
+        if let end = selectedEndDate {
+            let days = Calendar.current.dateComponents([.day], from: start, to: end).day ?? 0
             if days > 6 {
-                endDatePicker.date = Calendar.current.date(byAdding: .day, value: 6, to: start) ?? start
-                selectedEndDate = endDatePicker.date
+                let capped = Calendar.current.date(byAdding: .day, value: 6, to: start) ?? start
+                endDatePicker.date = capped
+                selectedEndDate = capped
             }
         }
     }

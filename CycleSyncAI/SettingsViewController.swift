@@ -20,7 +20,7 @@ class SettingsViewController: UIViewController {
         ("morningReminderEnabled", "Morning Reminder", "Get a daily reminder to generate your plan."),
         ("phaseChangeEnabled", "Phase Change Alerts", "Notifies when your menstrual phase changes."),
         ("hydrationEnabled", "Hydration Reminders", "Reminds you to drink water regularly."),
-        ("followUpEnabled", "Meal/Workout Follow-ups", "Prompts you to complete or reflect on meals/workouts.")
+        ("followUpEnabled", "Meal/Workout Follow-ups", "Prompts you to log your  meals/workouts.")
     ]
 
     override func viewDidLoad() {
